@@ -2,15 +2,15 @@ package mentorship.roadmap.microservices.service_a.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import mentorship.roadmap.microservices.service_a.config.WebConfig;
+import mentorship.roadmap.microservices.service_a.client.MessageClient;
 import mentorship.roadmap.microservices.service_a.dto.MessageDto;
 import mentorship.roadmap.microservices.service_a.dto.MessageRequest;
 import mentorship.roadmap.microservices.service_a.entity.Message;
 import mentorship.roadmap.microservices.service_a.mapper.MessageMapper;
 import mentorship.roadmap.microservices.service_a.repository.MessageRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * TODO Class Description
@@ -21,16 +21,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 @RequiredArgsConstructor
 @Slf4j
 @Service
-public class MessageServiceImpl implements MessageService{
+public class MessageServiceImpl implements MessageService {
 
-    private final WebClient.Builder webClientBuilder;
     private final MessageRepository messageRepository;
     private final MessageMapper mapper;
-
-    private static final String PROCESS_MESSAGE_URI = "/api/v1/process";
-
-    @Value("${service-b.uri}")
-    private String SERVICE_B_URI;
+    private final MessageClient messageClient;
 
     @Override
     public MessageRequest processMessage(MessageDto messageDto) {
@@ -51,16 +46,14 @@ public class MessageServiceImpl implements MessageService{
     }
 
     private void sendMessagePost(MessageRequest messageRequest) {
-         webClientBuilder.build()
-                .post()
-                .uri(SERVICE_B_URI + PROCESS_MESSAGE_URI)
-                .bodyValue(messageRequest)
-                .retrieve()
-                .bodyToMono(MessageRequest.class)
-                 .subscribe(
-                         response -> log.info("A: got response with id: {}", response.id()),
-                         error -> log.info("A: error sending request: {}", error.getMessage())
-                 );
+        CompletableFuture.supplyAsync(() -> messageClient.sendMessage(messageRequest))
+                .whenComplete((response, error) -> {
+                    if (error != null) {
+                        log.error("A: error sending request: {}", error.getMessage());
+                    } else {
+                        log.info("A: got response with id: {}", response.id());
+                    }
+                });
     }
 
     private Message save(MessageDto messageDto) {

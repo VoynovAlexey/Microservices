@@ -14,5 +14,9 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
-service-b:
-  uri: ${SERVICE_B_URL}
+  cloud:
+    openfeign:
+      client:
+        config:
+          messageClient:
+            url: ${SERVICE_B_URL}

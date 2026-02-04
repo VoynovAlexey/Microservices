@@ -2,14 +2,14 @@ package mentorship.roadmap.microservices.service_b.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import mentorship.roadmap.microservices.service_b.client.MessageClient;
 import mentorship.roadmap.microservices.service_b.dto.MessageDto;
 import mentorship.roadmap.microservices.service_b.dto.Type;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * TODO Class Description
@@ -23,13 +23,10 @@ import java.time.Duration;
 public class MessageServiceImpl implements MessageService {
 
     private final RedisTemplate<String, MessageDto> redisTemplate;
-    private final WebClient.Builder webClienBuilder;
+    private final MessageClient messageClient;
 
     private static final String KEY_PREFIX = "message:%s";
-    private static final String SAVE_MESSAGE_URI = "/api/v1/save";
 
-    @Value("${service-c.uri}")
-    private String SERVICE_C_URI;
 
     @Override
     public MessageDto process(MessageDto messageDto) {
@@ -48,15 +45,13 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private void sendMessagePost(MessageDto messageDto) {
-        webClienBuilder.build()
-                .post()
-                .uri(SERVICE_C_URI + SAVE_MESSAGE_URI)
-                .bodyValue(messageDto)
-                .retrieve()
-                .bodyToMono(MessageDto.class)
-                .subscribe(
-                        response -> log.info("B: got response with id: {}", response.id()),
-                        error -> log.info("B: error sending request: {}", error.getMessage())
-                );
+        CompletableFuture.supplyAsync(() -> messageClient.sendMessage(messageDto))
+                .whenComplete((response, error) -> {
+                    if (error != null) {
+                        log.error("B: error sending request: {}", error.getMessage());
+                    } else {
+                        log.info("B: error sending request: {}", error.getMessage());
+                    }
+                });
     }
 }

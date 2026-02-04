@@ -2,8 +2,6 @@ package mentorship.roadmap.microservices.service_b.service;
 
 import mentorship.roadmap.microservices.service_b.dto.MessageDto;
 
-import java.util.List;
-
 /**
  * TODO Class Description
  *

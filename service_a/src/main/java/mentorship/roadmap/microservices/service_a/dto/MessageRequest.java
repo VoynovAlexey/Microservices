@@ -1,7 +1,5 @@
 package mentorship.roadmap.microservices.service_a.dto;
 
-import jakarta.validation.constraints.NotBlank;
-
 /**
  * TODO Class Description
  *

@@ -1,14 +1,19 @@
 package mentorship.roadmap.microservices.service_c.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import mentorship.roadmap.microservices.service_c.entity.Message;
 import mentorship.roadmap.microservices.service_c.dto.MessageDto;
+import mentorship.roadmap.microservices.service_c.entity.Message;
+import mentorship.roadmap.microservices.service_c.entity.OutboxMessage;
 import mentorship.roadmap.microservices.service_c.mapper.MessageMapper;
 import mentorship.roadmap.microservices.service_c.repository.MessageRepository;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
+import mentorship.roadmap.microservices.service_c.repository.OutboxRepository;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 /**
  * TODO Class Description
@@ -22,13 +27,11 @@ import org.springframework.stereotype.Service;
 public class MessageServiceImpl implements MessageService {
 
     private final MessageRepository messageRepository;
+    private final OutboxRepository outboxRepository;
+    private final ObjectMapper objectMapper;
 
     private final MessageMapper mapper;
 
-    private final KafkaTemplate<String, MessageDto> kafkaTemplate;
-
-    @Value("${kafka.topic.out}")
-    private String outTopic;
 
     @Override
     public MessageDto getMessage(String id) {
@@ -38,20 +41,27 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    @Transactional
     public MessageDto saveMessage(MessageDto messageDto) {
-         Message message = messageRepository.save(
+        Message message = messageRepository.save(
                 mapper.toMessage(messageDto)
-        );log.info("C: saved message with id {}", message.getId());
-
-        kafkaTemplate.send(outTopic, messageDto).whenComplete(
-                (result, ex) -> {
-                    if (ex == null) {
-                        log.info("Message successfully sent: {}", messageDto.message());
-                    } else {
-                        log.error("Failed to send message: {}", messageDto.message(), ex);
-                    }
-                }
         );
+        log.info("C: saved message with id {}", message.getId());
+
+        try {
+            String messagePayload = objectMapper.writeValueAsString(messageDto);
+
+            OutboxMessage outboxMessage = OutboxMessage.builder()
+                    .createdAt(LocalDateTime.now())
+                    .payload(messagePayload)
+                    .eventType("message")
+                    .build();
+
+            outboxRepository.save(outboxMessage);
+        } catch (JsonProcessingException e) {
+            log.error("C: error while converting json to string: {}", e.getMessage());
+        }
+
 
         return messageDto;
     }
