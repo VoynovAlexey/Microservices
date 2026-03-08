@@ -1,7 +1,7 @@
 services:
 
   kafka:
-    image: bitnami/kafka:latest
+    image: bitnamilegacy/kafka:4.0.0-debian-12-r10
     environment:
       - KAFKA_CFG_NODE_ID=0
       - KAFKA_CFG_PROCESS_ROLES=broker,controller
@@ -23,17 +23,17 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
 
   mongo:
-    image: mongo:latest
+    image: mongo:7.0
     ports:
       - "27017:27017"
 
   redis:
-    image: redis:latest
+    image: redis:7.2-alpine
     ports:
       - "6379:6379"
 
   postgres:
-    image: postgres:latest
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password

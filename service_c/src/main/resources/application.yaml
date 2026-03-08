@@ -16,3 +16,7 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+
+kafka:
+  topic:
+    out: out
