@@ -3,6 +3,7 @@ package mentorship.roadmap.microservices.service_a.controller;
 import lombok.RequiredArgsConstructor;
 import mentorship.roadmap.microservices.service_a.dto.MessageDto;
 import mentorship.roadmap.microservices.service_a.service.MessageService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,8 +23,8 @@ public class MessageController {
     private final MessageService messageService;
 
     @GetMapping("/{id}")
-    public MessageDto getMessage(@PathVariable String id) {
-        return messageService.findById(id);
+    public ResponseEntity<MessageDto> getMessage(@PathVariable String id) {
+        return ResponseEntity.ok(messageService.findById(id));
     }
 
 }
